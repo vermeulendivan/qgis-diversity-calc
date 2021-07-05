@@ -23,13 +23,14 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .diversity_calc_dialog import DiversityCalcDialog
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
+from .diversity_functions import dc_summarizePoly, dc_mergeDictionaries, dc_resultString
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsMessageLog, Qgis
 import os.path
 
 
@@ -197,14 +198,44 @@ class DiversityCalc:
             self.dlg.fcbSpecies.setFilters(QgsFieldProxyModel.String)
             
             self.dlg.fcbCategory.setLayer(self.dlg.mcbPoly.currentLayer())
-            self.dlg.fcbSpecies.setLayer(self.dlg.mcbPoly.currentLayer())
+            self.dlg.fcbSpecies.setLayer(self.dlg.mcbPoint.currentLayer())
 
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
+        
+        dctMain = {}
         if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+            # Get required input parameters
+            lyrPoly = self.dlg.mcbPoly.currentLayer()
+            lyrPoint = self.dlg.mcbPoint.currentLayer()
+            
+            fldCategory = self.dlg.fcbCategory.currentField()
+            fldSpecies = self.dlg.fcbSpecies.currentField()
+            
+            for poly in lyrPoly.getFeatures():
+                sCategory = poly.attribute(fldCategory)
+                QgsMessageLog.logMessage("Category: {}".format(sCategory), "Diversity calc", level=Qgis.Info)
+                
+                dctSummary = dc_summarizePoly(poly, lyrPoint, fldSpecies)
+                QgsMessageLog.logMessage("Summary: {}".format(dctSummary), "Diversity calc", level=Qgis.Info)
+                
+                dctMain = dc_mergeDictionaries(dctMain, sCategory, dctSummary)
+            QMessageBox.information(self.dlg, "Summary", dc_resultString(dctMain))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
