@@ -29,6 +29,7 @@ from qgis.PyQt.QtWidgets import QAction
 from .resources import *
 # Import the code for the dialog
 from .diversity_calc_dialog import DiversityCalcDialog
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
 import os.path
 
 
@@ -188,6 +189,15 @@ class DiversityCalc:
         if self.first_start == True:
             self.first_start = False
             self.dlg = DiversityCalcDialog()
+            
+            self.dlg.mcbPoly.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+            self.dlg.mcbPoint.setFilters(QgsMapLayerProxyModel.PointLayer)
+
+            self.dlg.fcbCategory.setFilters(QgsFieldProxyModel.String)
+            self.dlg.fcbSpecies.setFilters(QgsFieldProxyModel.String)
+            
+            self.dlg.fcbCategory.setLayer(self.dlg.mcbPoly.currentLayer())
+            self.dlg.fcbSpecies.setLayer(self.dlg.mcbPoly.currentLayer())
 
         # show the dialog
         self.dlg.show()
